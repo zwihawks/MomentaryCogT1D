@@ -1,11 +1,9 @@
-# MomentaryCogT1D
-Code and resources associated with manuscript "Between- and within-person influences on momentary cognition in Type I Diabetes" - Hawks et al.  
+## MomentaryCogT1D
+Code and resources associated with manuscript "Between- and within-person influences on momentary cognition in Type I Diabetes" 
 
 ## Authors:  
 
-Zoë Hawks, Emorie D. Beck, Laneé Jung, Luciana M. Fonseca, Elizabeth Grinspoon, Irene Xu, Roger Strong, Shifali Singh, Madelyn Frumkin, Naomi Chaytor, & Laura T. Germine  
-
-Please address all correspondence to zhawks@mclean.harvard.edu
+Zoë Hawks, Emorie D. Beck, Laneé Jung, Luciana M. Fonseca, Elizabeth Grinspoon, Irene Xu, Roger Strong, Shifali Singh, Madelyn Frumkin, Naomi Chaytor, & Laura T. Germine. Please address all correspondence to zhawks@mclean.harvard.edu.
 
 ## Description of files:
 

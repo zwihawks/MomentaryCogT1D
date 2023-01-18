@@ -2,8 +2,6 @@
 # Step 4: Aim 1 hypothesis-driven analysis
 # --------------------------
 
-# From: R_Output/Plots/Final_df/parsnip/glu_and_survey/FinalDF_hypothesisDriven_synthesis_20221019.R
-
 # ---------------------
 # source functions & load libraries  
 # ---------------------
@@ -280,9 +278,6 @@ ggsave("Files/Output/Aim1_comb.tiff", Aim1_comb,
 # -----------------------
 # Evaluate optimal performance
 # -----------------------
-
-# From: ~/Dropbox (Partners HealthCare)/BachTech_Mats/GluCogAim1/R_Scripts/FinalDF_hypothesisDriven_20221014.R
-# From: ~/Dropbox (Partners HealthCare)/BachTech_Mats/GluCogAim1/R_Scripts/FinalDF_hypothesisDriven_funcs_20221014.R
 
 epred_summary <- quad_plots(models[str_detect(names(models), "dsm_row2")], 
                             EMA_cutoffs = c("66pct", "80pct", "50pct"), 

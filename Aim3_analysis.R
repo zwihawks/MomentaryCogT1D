@@ -2,8 +2,6 @@
 # Step 7: Aim 3 data-driven intra-individual analysis
 # --------------------------
 
-# From: R_Output/Plots/Final_df/parsnip/glu_and_survey/FinalDF_hypothesisDriven_synthesis_20221019.R
-
 # ---------------------
 # source functions & load libraries  
 # ---------------------

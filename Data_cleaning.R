@@ -2,8 +2,6 @@
 # Step 1: Data cleaning
 # --------------------------
 
-# From: R_Scripts/FinalDF_hypothesisDriven_20221014.R
-
 # ---------------------
 # source functions & load libraries  
 # ---------------------
@@ -211,8 +209,6 @@ for_analysis %>%
 # ---------------------
 # When were CGM data from second device scrubbed? 
 # ---------------------
-# script to generate CSV:
-# ~/Dropbox (Partners HealthCare)/BachTech_Mats/GluCogAim1/R_Scripts/DerivingCGMMetrics_overlappingWindows.R
 mydf_clean <- read.csv(paste0("Files/", main_output_dir, "/mydf_clean_20221014.csv"))
 CGM_scrubbed <- read.csv("Files/CGM_scrubbed.csv") %>%
   group_by(user_id) %>%

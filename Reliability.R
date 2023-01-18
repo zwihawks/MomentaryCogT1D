@@ -2,8 +2,6 @@
 # Step 2: Reliability
 # --------------------------
 
-# From: R_Scripts/GloodCogPsychometrics_ZH_20221014.Rmd
-
 # ---------------------
 # source functions & load libraries  
 # ---------------------

@@ -2,8 +2,6 @@
 # Step 3: HB Modeling
 # --------------------------
 
-# From: R_Scripts/FinalDF_hypothesisDriven_20221014.R
-
 # ---------------------
 # source functions & load libraries  
 # ---------------------

@@ -2,8 +2,6 @@
 # Step 5: Aim 2 data-driven inter-individual difference analysis
 # --------------------------
 
-# From: R_Output/Plots/Final_df/parsnip/glu_and_survey/FinalDF_hypothesisDriven_synthesis_20221019.R
-
 # ---------------------
 # source functions & load libraries  
 # ---------------------

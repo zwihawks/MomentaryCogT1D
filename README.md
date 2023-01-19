@@ -3,7 +3,7 @@ Code and resources associated with manuscript "Between- and within-person influe
 
 #### Authors:  
 
-Zoë Hawks, Emorie D. Beck, Laneé Jung, Luciana M. Fonseca, Elizabeth Grinspoon, Irene Xu, Roger Strong, Shifali Singh, Madelyn Frumkin, Naomi Chaytor, & Laura T. Germine. Please address all correspondence to zhawks@mclean.harvard.edu.
+Hawks, Z.W., Beck, E.D., Jung, L., Fonseca, L.M., Sliwinski, M., Weinstock, R.S., Grinspoon, E., Xu, I., Strong, R., Singh, S., Frumkin, M.R., Chaytor, N. & Germine, L.T. Please address all correspondence to zhawks@mclean.harvard.edu.
 
 #### Description of files:
 

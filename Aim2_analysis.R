@@ -40,23 +40,23 @@ TMB_tmp <- read.csv("Files/20221013_50pct_inclusion/TMB_tmp_20221014.csv")
 subject_level_data <- 
   read.csv("Files/subject_level_data.csv") %>%
   wrangle_subject_file(., select_SB = FALSE) %>%
-  mutate(clinic_STOP_BANG_risk_num = if_else(clinic_STOP_BANG_risk == "low", 0, 1),
-         clinic_STOP_BANG_risk_num = if_else(clinic_STOP_BANG_risk == "high", 2, clinic_STOP_BANG_risk_num)) %>%
+  mutate(clinic_STOP_BANG_risk_num = if_else(clinic_STOP_BANG_risk == "low", 0, 1)) %>%
+  mutate(clinic_STOP_BANG_risk_num = if_else(clinic_STOP_BANG_risk == "high", 2, clinic_STOP_BANG_risk_num)) %>%
   select(-clinic_BANG_sum, -clinic_STOP_sum, -clinic_STOP_BANG_risk)
-  
+
 TMB_clean <-
   TMB_tmp %>%
   select(-c(clinic_Weight, clinic_Height, clinic_WaistCir, 
             clinic_NeckCir, clinic_SHSeizComaLast12MonthsB)) %>%
-  mutate(demo_education_num = if_else(demo_education == "high", 0, NA_real_),
-         demo_education_num = if_else(demo_education == "some_college", 1, demo_education_num),
-         demo_education_num = if_else(demo_education == "technical", 1, demo_education_num),
-         demo_education_num = if_else(demo_education == "college", 2, demo_education_num),
-         demo_education_num = if_else(demo_education == "masters", 3, demo_education_num),
-         demo_education_num = if_else(demo_education == "grad", 4, demo_education_num),
-         demo_ethnicity_africanOrBlack = if_else(demo_ethnicity == "africanOrBlack", 1, 0),
-         demo_ethnicity_europeanOrWhite = if_else(demo_ethnicity == "europeanOrWhite", 1, 0),
-         demo_hispanic_yes = if_else(demo_hispanic == "yes", 1, 0)) %>%
+  mutate(demo_education_num = if_else(demo_education == "high", 0, NA_real_)) %>%
+  mutate(demo_education_num = if_else(demo_education == "some_college", 1, demo_education_num)) %>%
+  mutate(demo_education_num = if_else(demo_education == "technical", 1, demo_education_num)) %>%
+  mutate(demo_education_num = if_else(demo_education == "college", 2, demo_education_num)) %>%
+  mutate(demo_education_num = if_else(demo_education == "masters", 3, demo_education_num)) %>%
+  mutate(demo_education_num = if_else(demo_education == "grad", 4, demo_education_num)) %>%
+  mutate(demo_ethnicity_africanOrBlack = if_else(demo_ethnicity == "africanOrBlack", 1, 0)) %>%
+  mutate(demo_ethnicity_europeanOrWhite = if_else(demo_ethnicity == "europeanOrWhite", 1, 0)) %>%
+  mutate(demo_hispanic_yes = if_else(demo_hispanic == "yes", 1, 0)) %>%
   {
     bind_cols(
       select_if(., is.numeric),
@@ -107,8 +107,8 @@ if (run_lasso) {
       TMB_plus %>% 
       filter(!is.na(condition_mean)) %>%
       select(-clinic_id, -condition_mean) %>%
-      mutate(id_cat = if_else(str_detect(id, "80pct"), "80pct", "50pct"),
-             id_cat = if_else(str_detect(id, "66pct"), "66pct", id_cat)) %>%
+      mutate(id_cat = if_else(str_detect(id, "80pct"), "80pct", "50pct")) %>%
+      mutate(id_cat = if_else(str_detect(id, "66pct"), "66pct", id_cat)) %>%
       gather(key = key, value = value, -user_id, -id, -id_cat) %>%
       mutate(key = str_replace_all(key, "ethnicity", "race")) %>%
       ggplot(., aes(x = value)) +
@@ -186,11 +186,11 @@ if (run_lasso) {
 lasso_results <- 
   lasso_results_outer %>%
   group_by(var, inclusion) %>%
-  summarise(coef_mean = mean(coef, na.rm = TRUE),
-            coef_sd = sd(coef, na.rm = TRUE),
-            coef_n = n(),
-            coef_lower = coef_mean - 1.96*coef_sd/sqrt(coef_n),
-            coef_upper = coef_mean + 1.96*coef_sd/sqrt(coef_n)) 
+  dplyr::summarise(coef_mean = mean(coef, na.rm = TRUE),
+                   coef_sd = sd(coef, na.rm = TRUE),
+                   coef_n = n(),
+                   coef_lower = coef_mean - 1.96*coef_sd/sqrt(coef_n),
+                   coef_upper = coef_mean + 1.96*coef_sd/sqrt(coef_n)) 
 
 mean_RMSE <- 
   cvm_outer %>%
@@ -247,7 +247,7 @@ ggsave("Files/Output/lasso_plot.tiff", lass_plot, units = "in", height = 5, widt
 quad_plot_gradient <-
   quad_plots(model_input = dsm_speed, 
              EMA_cutoffs = c("66pct"), 
-             TMB_list = list(NULL, TMB_clean, TMB_clean, TMB_clean, TMB_clean, TMB_clean),
+             TMB_list = list(NULL, TMB_clean, TMB_clean, TMB_clean, TMB_clean, TMB_clean, TMB_clean),
              lasso = TRUE,
              lasso_results = lasso_results,
              n_reps = n_reps*.5,
@@ -261,18 +261,17 @@ quad_plot_gradient_comb <-
       quad_plot_gradient[[2]][[4]],
       nrow = 1, labels = c("A","B", "C")),
     cowplot::plot_grid(
-      NULL,
       quad_plot_gradient[[2]][[5]], 
       quad_plot_gradient[[2]][[6]],
-      NULL,
-      rel_widths = c(.15, .35, .35, .15),
-      nrow = 1, labels = c("", "D","E", "")),
+      quad_plot_gradient[[2]][[7]],
+      nrow = 1, labels = c("D","E", "F")),
     cowplot::plot_grid(
       quad_plot_gradient[[1]][[2]], 
       quad_plot_gradient[[1]][[3]],
       quad_plot_gradient[[1]][[4]],
       quad_plot_gradient[[1]][[5]],
       quad_plot_gradient[[1]][[6]],
+      quad_plot_gradient[[1]][[7]],
       nrow = 1),
     nrow = 3, align = 'v', axis = 'r', rel_heights = c(.45, .45, .1))
 ggsave("Files/Output/quad_plot_gradient_comb.tiff", 

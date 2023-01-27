@@ -53,61 +53,58 @@ wrangle_subject_file <- function(df, select_SB = TRUE) {
     filter(user_id != "") %>%
     # recode severe hypo & DKA events as ordinal
     # For 12-mo. hx, limited categories to 0 (coded as 0), 1 (coded as 1), and more than 1 (coded as 2))
-    dplyr::mutate(clinic__SHNumEverB = if_else(str_detect(SHNumEverB, ">"), "6", SHNumEverB),
-                  clinic__SHNumEverB = as.numeric(if_else(str_detect(clinic__SHNumEverB, "-"), "5", clinic__SHNumEverB)),
-                  clinic__SHLast12MonthsB = if_else(SHLast12MonthsB == "", "0", SHLast12MonthsB), 
-                  clinic__SHLast12MonthsB = as.numeric(if_else(str_detect(clinic__SHLast12MonthsB, "-") |
+    dplyr::mutate(clinic__SHNumEverB = if_else(str_detect(SHNumEverB, ">"), "6", SHNumEverB)) %>%
+    dplyr::mutate(clinic__SHNumEverB = as.numeric(if_else(str_detect(clinic__SHNumEverB, "-"), "5", clinic__SHNumEverB))) %>%
+    dplyr::mutate(clinic__SHLast12MonthsB = if_else(SHLast12MonthsB == "", "0", SHLast12MonthsB)) %>%
+    dplyr::mutate(clinic__SHLast12MonthsB = as.numeric(if_else(str_detect(clinic__SHLast12MonthsB, "-") |
                                                                  str_detect(clinic__SHLast12MonthsB, "2") |
                                                                  str_detect(clinic__SHLast12MonthsB, "3"), 
-                                                               "2", clinic__SHLast12MonthsB)),
-                  clinic__SHSeizComaLast12MonthsB = SHSeizComaLast12MonthsB,
-                  clinic__DKANumEverB = if_else(str_detect(DKANumEverB, ">"), "6", DKANumEverB),
-                  clinic__DKANumEverB = as.numeric(if_else(str_detect(clinic__DKANumEverB, "-"), "5", clinic__DKANumEverB)),
-                  clinic__DKALast12MonthsB = if_else(DKALast12MonthsB == "", "0", DKALast12MonthsB),
-                  clinic__DKALast12MonthsB = as.numeric(if_else(str_detect(clinic__DKALast12MonthsB, ">") |
+                                                               "2", clinic__SHLast12MonthsB))) %>%
+    dplyr::mutate(clinic__SHSeizComaLast12MonthsB = SHSeizComaLast12MonthsB) %>%
+    dplyr::mutate(clinic__DKANumEverB = if_else(str_detect(DKANumEverB, ">"), "6", DKANumEverB)) %>%
+    dplyr::mutate(clinic__DKANumEverB = as.numeric(if_else(str_detect(clinic__DKANumEverB, "-"), "5", clinic__DKANumEverB))) %>%
+    dplyr::mutate(clinic__DKALast12MonthsB = if_else(DKALast12MonthsB == "", "0", DKALast12MonthsB)) %>%
+    dplyr::mutate(clinic__DKALast12MonthsB = as.numeric(if_else(str_detect(clinic__DKALast12MonthsB, ">") |
                                                                   str_detect(clinic__DKALast12MonthsB, "-"), 
-                                                                "2", clinic__DKALast12MonthsB)),
-                  clinic__cgmusestat = if_else(CGMUseStat == "Current", 1, 0),
-                  clinic__microvascular_binary = microvascular_binary,
-                  clinic__microvascular_count = microvascular_count) %>%
-    dplyr::mutate(
-      # recode clinic variables
-      # convert to cm
-      clinic__WaistCir = if_else(WaistCirUnits == "in", WaistCir*2.54, WaistCir),
-      clinic__NeckCir = if_else(NeckCirUnits == "in", NeckCir*2.54, NeckCir),
-      clinic__Height = if_else(HeightUnits == "in", Height*2.54, Height),
-      # convert to kg
-      clinic__Weight = if_else(WeightUnits == "lbs", Weight*0.4536, Weight),
-      # compute BMI
-      clinic__BMI = (clinic__Weight/clinic__Height^2)*10000,
-      # STOP-BANG
-      clinic__STOP_snoring_test = if_else(sleepComfort_snoring == "yes", 1, 0),
-      clinic__STOP_tired_test = if_else(sleepComfort_tired == "yes", 1, 0),
-      clinic__STOP_observed_test = if_else(sleepComfort_observed == "yes", 1, 0),
-      clinic__STOP_pressure_test = if_else(sleepComfort_pressure == "yes", 1, 0),
-      clinic__BANG_BMI_test = if_else(clinic__BMI > 35, 1, 0),
-      clinic__BANG_age_test = if_else(demo_age > 50, 1, 0),
-      clinic__BANG_NeckCir_test = if_else(clinic__NeckCir > 40, 1, 0),
-      clinic__BANG_gender_male = if_else(Gender == "M", 1, 0)) %>%
+                                                                "2", clinic__DKALast12MonthsB))) %>%
+    dplyr::mutate(clinic__cgmusestat = if_else(CGMUseStat == "Current", 1, 0)) %>%
+    dplyr::mutate(clinic__microvascular_binary = microvascular_binary) %>%
+    dplyr::mutate(clinic__microvascular_count = microvascular_count) %>%
+    # recode clinic variables
+    # convert to cm
+    dplyr::mutate(clinic__WaistCir = if_else(WaistCirUnits == "in", WaistCir*2.54, WaistCir)) %>%
+    dplyr::mutate(clinic__NeckCir = if_else(NeckCirUnits == "in", NeckCir*2.54, NeckCir)) %>%
+    dplyr::mutate(clinic__Height = if_else(HeightUnits == "in", Height*2.54, Height)) %>%
+    # convert to kg
+    dplyr::mutate(clinic__Weight = if_else(WeightUnits == "lbs", Weight*0.4536, Weight)) %>%
+    # compute BMI
+    dplyr::mutate(clinic__BMI = (clinic__Weight/clinic__Height^2)*10000) %>%
+    # STOP-BANG
+    dplyr::mutate(clinic__STOP_snoring_test = if_else(sleepComfort_snoring == "yes", 1, 0)) %>%
+    dplyr::mutate(clinic__STOP_tired_test = if_else(sleepComfort_tired == "yes", 1, 0)) %>%
+    dplyr::mutate(clinic__STOP_observed_test = if_else(sleepComfort_observed == "yes", 1, 0)) %>%
+    dplyr::mutate(clinic__STOP_pressure_test = if_else(sleepComfort_pressure == "yes", 1, 0)) %>%
+    dplyr::mutate(clinic__BANG_BMI_test = if_else(clinic__BMI > 35, 1, 0)) %>%
+    dplyr::mutate(clinic__BANG_age_test = if_else(demo_age > 50, 1, 0)) %>%
+    dplyr::mutate(clinic__BANG_NeckCir_test = if_else(clinic__NeckCir > 40, 1, 0)) %>%
+    dplyr::mutate(clinic__BANG_gender_male = if_else(Gender == "M", 1, 0)) %>%
     # compute stop-bang score
     rowwise() %>%
-    dplyr::mutate(
-      clinic__STOP_sum = sum(c_across(contains("_STOP_")), na.rm = TRUE),
-      clinic__BANG_sum = sum(c_across(contains("_BANG_")), na.rm = TRUE),
-      clinic__STOP_BANG_sum = sum(c(clinic__STOP_sum, clinic__BANG_sum), na.rm = TRUE)) %>%
+    dplyr::mutate(clinic__STOP_sum = sum(c_across(contains("_STOP_")), na.rm = TRUE)) %>%
+    dplyr::mutate(clinic__BANG_sum = sum(c_across(contains("_BANG_")), na.rm = TRUE)) %>%
+    dplyr::mutate(clinic__STOP_BANG_sum = sum(c(clinic__STOP_sum, clinic__BANG_sum), na.rm = TRUE)) %>%
     ungroup() %>%
-    dplyr::mutate(
-      clinic__STOP_BANG_risk = if_else(clinic__STOP_BANG_sum <= 2, "low", "intermediate"),
-      clinic__STOP_BANG_risk = if_else(clinic__STOP_BANG_sum >= 5, "high", clinic__STOP_BANG_risk),
-      clinic__STOP_BANG_risk = if_else(clinic__STOP_sum >= 2 & 
-                                         clinic__BANG_gender_male == 1 &
-                                         !is.na(clinic__BANG_gender_male), "high", clinic__STOP_BANG_risk),
-      clinic__STOP_BANG_risk = if_else(clinic__STOP_sum >= 2 & 
-                                         clinic__BANG_BMI_test == 1 &
-                                         !is.na(clinic__BANG_BMI_test), "high", clinic__STOP_BANG_risk),
-      clinic__STOP_BANG_risk = if_else(clinic__STOP_sum >= 2 & 
-                                         clinic__BANG_NeckCir_test == 1 & 
-                                         !is.na(clinic__BANG_NeckCir_test), "high", clinic__STOP_BANG_risk)
+    dplyr::mutate(clinic__STOP_BANG_risk = if_else(clinic__STOP_BANG_sum <= 2, "low", "intermediate")) %>%
+    dplyr::mutate(clinic__STOP_BANG_risk = if_else(clinic__STOP_BANG_sum >= 5, "high", clinic__STOP_BANG_risk)) %>%
+    dplyr::mutate(clinic__STOP_BANG_risk = if_else(clinic__STOP_sum >= 2 & 
+                                                     clinic__BANG_gender_male == 1 &
+                                                     !is.na(clinic__BANG_gender_male), "high", clinic__STOP_BANG_risk)) %>%
+    dplyr::mutate(clinic__STOP_BANG_risk = if_else(clinic__STOP_sum >= 2 & 
+                                                     clinic__BANG_BMI_test == 1 &
+                                                     !is.na(clinic__BANG_BMI_test), "high", clinic__STOP_BANG_risk)) %>%
+    dplyr::mutate(clinic__STOP_BANG_risk = if_else(clinic__STOP_sum >= 2 & 
+                                                     clinic__BANG_NeckCir_test == 1 & 
+                                                     !is.na(clinic__BANG_NeckCir_test), "high", clinic__STOP_BANG_risk)
     ) %>% 
     select(user_id, starts_with("clinic__")) 
   colnames(subject_data) <- colnames(subject_data) %>% str_replace_all(., "__", "_")
@@ -236,11 +233,11 @@ quad_plots <- function(model_input,
     user_acceleration <- 
       stanmodel[[1]] %>% 
       spread_draws(`(Intercept)`, `poly(MinLag_0_WP, 2, raw = FALSE)2`, b[group, term], sep = " u") %>% 
-      rename(Intercept = `(Intercept)`, quad_fixed = `poly(MinLag_0_WP, 2, raw = FALSE)2`) %>%
+      dplyr::rename(Intercept = `(Intercept)`, quad_fixed = `poly(MinLag_0_WP, 2, raw = FALSE)2`) %>%
       filter(group == "poly(MinLag_0_WP, 2, raw = FALSE)2" | group == "(Intercept)") %>%
       pivot_wider(names_from = group, values_from = b) %>%
-      mutate(user_acceleration = quad_fixed + `poly(MinLag_0_WP, 2, raw = FALSE)2`, 
-             user_intercept = Intercept + `(Intercept)`) %>% 
+      dplyr::mutate(user_acceleration = quad_fixed + `poly(MinLag_0_WP, 2, raw = FALSE)2`) %>%
+      dplyr::mutate(user_intercept = Intercept + `(Intercept)`) %>% 
       group_by(term) %>% median_qi(user_intercept, user_acceleration) %>% 
       separate(term, into = c("omit", "user_id"), sep = ":") %>% 
       select(-omit)
@@ -249,7 +246,7 @@ quad_plots <- function(model_input,
       epred_summary <- 
         epreds %>% 
         group_by(MinLag_0_WP, user_id) %>% 
-        summarise(mean = mean(.epred)) %>%
+        dplyr::summarise(mean = mean(.epred)) %>%
         ungroup() %>% 
         left_join(user_acceleration %>% ungroup()) %>%
         mutate(mean_centered = mean - user_intercept) %>%
@@ -280,11 +277,11 @@ quad_plots <- function(model_input,
       c("", 
         lasso_results %>% 
           filter((coef_n > n_reps) & var != ("(Intercept)")) %>%
-          select(var, inclusion, coef = coef_mean) %>%
+          dplyr::select(var, inclusion, coef = coef_mean) %>%
           pivot_wider(names_from = inclusion, values_from = coef) %>% 
           ungroup() %>%
           filter(complete.cases(.)) %>% 
-          mutate(var = str_remove(var, "_z")) %>% pull(var))
+          dplyr::mutate(var = str_remove(var, "_z")) %>% pull(var))
   } 
   
   if (length(TMB_list) != length(metric_list)) {

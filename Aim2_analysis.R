@@ -117,13 +117,13 @@ if (run_lasso) {
       ggplot(., aes(x = value)) +
       geom_histogram(aes(fill = id_cat), alpha = .5, 
                      position = "identity", bins = 15) +
-      facet_wrap(~ key, scales = "free", ncol = 4) +
+      facet_wrap(~ key, scales = "free", ncol = 5) +
       theme_bw() +
       labs(y = "Count", x = "", fill = "EMA\ncompletion")
     
     ggsave("Files/Output/Aim2_distributions.tiff", 
            lasso_distributions, 
-           units = "in", width = 12, height = 18)
+           units = "in", width = 14, height = 18)
   }
   
   vec <- c("80pct", "66pct", "50pct")

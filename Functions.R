@@ -313,9 +313,10 @@ quad_plots <- function(model_input,
            color = text %>% str_remove_all(., "clinic_") %>% str_remove_all(., "demo_")) +
       theme_bw() +
       guides(fill = 'none') +
-      {if(!is.null(TMB)) scale_color_gradientn(colors = c('red', "gray", "blue"),
-                                               guide = guide_colorbar(direction = "horizontal", 
-                                                                      title.position = "top")) } +
+      {if(!is.null(TMB)) scale_color_gradient2(low = 'red', mid = "salmon", high = "blue",
+                                              guide = guide_colorbar(direction = "horizontal", 
+                                                                     title.position = "top"),
+                                              midpoint = median(epred_summary_tmp$metric, na.rm = TRUE)) } +
       {if(!is.null(TMB)) ggtitle(text %>% str_remove_all(., "clinic_") %>% str_remove_all(., "demo_")) }
     
     legend[[j]] <- get_legend(individual_plots[[j]])

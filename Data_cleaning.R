@@ -166,7 +166,12 @@ for_analysis <-
   mutate(sample = "Included") %>%
   bind_rows(full_sample) %>%
   select(user_id, sample, demo_age, demo_gender, demo_education, 
-         demo_race = demo_ethnicity, demo_ethnicity = demo_hispanic) %>%
+         demo_race = demo_ethnicity, demo_ethnicity = demo_hispanic,
+         clinic_gluMean, clinic_gluSD, clinic_gluCV, clinic_HbA1cTestRes, 
+         clinic_gluInRange, clinic_gluBelow70, clinic_gluBelow54,
+         clinic_gluAbove180, clinic_gluAbove250, clinic_SHNumEverB) %>%
+  mutate_at(vars("clinic_gluInRange", contains("gluBelow"), contains("gluAbove"), "clinic_gluCV"),
+            funs(as.numeric(str_remove(., "%")))) %>%
   # simplify coding for chisq analysis - otherwise, too few levels for comparison
   mutate(demo_gender_male = if_else(demo_gender == "male", 1, 0),
          demo_gender_female = if_else(demo_gender == "female", 1, 0),
@@ -187,7 +192,8 @@ for_analysis <-
 
 # numeric variables
 for_analysis %>%
-  filter(key == "demo_age" | key == "demo_education_num") %>%
+  filter(key == "demo_age" | key == "demo_education_num" |
+           str_detect(key, "glu") | key == "clinic_HbA1cTestRes") %>%
   mutate(data = map(.x = data, ~.x %>% 
                       mutate(value = as.numeric(value),
                              sample = as.factor(sample))),
@@ -198,7 +204,8 @@ for_analysis %>%
   
 # factor variables
 for_analysis %>%
-  filter(key != "demo_age" & key != "demo_education_num") %>%
+  filter(!(key == "demo_age" | key == "demo_education_num" |
+            str_detect(key, "glu") | key == "clinic_HbA1cTestRes")) %>%
   mutate(data = map(.x = data, 
                     ~.x %>% 
                       mutate(value = as.factor(value),

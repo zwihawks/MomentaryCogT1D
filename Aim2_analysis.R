@@ -57,6 +57,9 @@ TMB_clean <-
   mutate(demo_ethnicity_africanOrBlack = if_else(demo_ethnicity == "africanOrBlack", 1, 0)) %>%
   mutate(demo_ethnicity_europeanOrWhite = if_else(demo_ethnicity == "europeanOrWhite", 1, 0)) %>%
   mutate(demo_hispanic_yes = if_else(demo_hispanic == "yes", 1, 0)) %>%
+  mutate_at(vars("clinic_gluInRange", "clinic_gluBelow70", "clinic_gluBelow54", 
+                 "clinic_gluAbove180", "clinic_gluAbove250", "clinic_gluCV"),
+            funs(as.numeric(str_remove(., "%")))) %>%
   {
     bind_cols(
       select_if(., is.numeric),
@@ -120,13 +123,14 @@ if (run_lasso) {
     
     ggsave("Files/Output/Aim2_distributions.tiff", 
            lasso_distributions, 
-           units = "in", width = 12, height = 15)
+           units = "in", width = 12, height = 18)
   }
   
+  vec <- c("80pct", "66pct", "50pct")
   for (j in 1:n_reps) {
-    for (i in c("80pct", "66pct", "50pct")) {
+    for (i in 1:length(vec)) {
       for_lasso <- 
-        TMB_plus %>% filter(str_detect(id, i)) %>% 
+        TMB_plus %>% filter(str_detect(id, vec[i])) %>% 
         filter(!is.na(condition_mean)) %>%
         mutate_all( ~ ifelse(is.na(.x), median(.x, na.rm = T), .)) %>%
         mutate_if(is.numeric, funs(z = (. - mean(.)) / sd(.)))
@@ -134,17 +138,17 @@ if (run_lasso) {
       cv_model <- cv.glmnet(y = for_lasso$condition_mean, x = data.matrix(x_df), alpha = 1)
       coefs <- coef(cv_model, s = "lambda.min")
       
-      if (i == "80pct") {
+      if (i == 1) {
         lasso_results_inner <-
           data.frame(var = coefs@Dimnames[[1]][coefs@i + 1], 
                      coef = coefs@x,
-                     inclusion = i,
+                     inclusion = vec[i],
                      rep = j) 
         
         cvm <- 
           data.frame(lambda = cv_model$lambda,
                      mse = cv_model$cvm,
-                     inclusion = i,
+                     inclusion = vec[i],
                      rep = j) %>%
           mutate(lambda_min = if_else(lambda == cv_model$lambda.min, 1, 0),
                  lambda_1se = if_else(lambda == cv_model$lambda.1se, 1, 0))
@@ -152,14 +156,14 @@ if (run_lasso) {
         tmp1 <-
           data.frame(var = coefs@Dimnames[[1]][coefs@i + 1], 
                      coef = coefs@x,
-                     inclusion = i,
+                     inclusion = vec[i],
                      rep = j) 
         lasso_results_inner <- bind_rows(lasso_results_inner, tmp1)
         
         tmp2 <- 
           data.frame(lambda = cv_model$lambda,
                      mse = cv_model$cvm,
-                     inclusion = i,
+                     inclusion = vec[i],
                      rep = j) %>%
           mutate(lambda_min = if_else(lambda == cv_model$lambda.min, 1, 0),
                  lambda_1se = if_else(lambda == cv_model$lambda.1se, 1, 0))
@@ -172,6 +176,7 @@ if (run_lasso) {
     } else {
       lasso_results_outer <- bind_rows(lasso_results_outer, lasso_results_inner)
       cvm_outer <- bind_rows(cvm_outer, cvm)
+      print(paste0(vec[i], ", ", j))
     }
   }
   write.csv(lasso_results_outer, "Files/Output/Lasso_results.csv", row.names = FALSE)
@@ -247,7 +252,7 @@ ggsave("Files/Output/lasso_plot.tiff", lass_plot, units = "in", height = 5, widt
 quad_plot_gradient <-
   quad_plots(model_input = dsm_speed, 
              EMA_cutoffs = c("66pct"), 
-             TMB_list = list(NULL, TMB_clean, TMB_clean, TMB_clean, TMB_clean, TMB_clean, TMB_clean),
+             TMB_list = list(NULL, TMB_clean, TMB_clean, TMB_clean, TMB_clean, TMB_clean, TMB_clean, TMB_clean),
              lasso = TRUE,
              lasso_results = lasso_results,
              n_reps = n_reps*.5,
@@ -259,12 +264,16 @@ quad_plot_gradient_comb <-
       quad_plot_gradient[[2]][[2]], 
       quad_plot_gradient[[2]][[3]],
       quad_plot_gradient[[2]][[4]],
-      nrow = 1, labels = c("A","B", "C")),
+      quad_plot_gradient[[2]][[5]],
+      nrow = 1, labels = c("A","B", "C", "D")),
     cowplot::plot_grid(
-      quad_plot_gradient[[2]][[5]], 
-      quad_plot_gradient[[2]][[6]],
+      NULL,
+      quad_plot_gradient[[2]][[6]], 
       quad_plot_gradient[[2]][[7]],
-      nrow = 1, labels = c("D","E", "F")),
+      quad_plot_gradient[[2]][[8]],
+      NULL,
+      nrow = 1, rel_widths = c(.125, .25, .25, .25, .125),
+      labels = c("","E", "F", "G", "")),
     cowplot::plot_grid(
       quad_plot_gradient[[1]][[2]], 
       quad_plot_gradient[[1]][[3]],
@@ -272,6 +281,7 @@ quad_plot_gradient_comb <-
       quad_plot_gradient[[1]][[5]],
       quad_plot_gradient[[1]][[6]],
       quad_plot_gradient[[1]][[7]],
+      quad_plot_gradient[[1]][[8]],
       nrow = 1),
     nrow = 3, align = 'v', axis = 'r', rel_heights = c(.45, .45, .1))
 ggsave("Files/Output/quad_plot_gradient_comb.tiff", 

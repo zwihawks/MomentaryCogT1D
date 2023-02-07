@@ -3,6 +3,8 @@
 # --------------------------
 
 load_packs <- function() {
+  library(corrplot)
+  library(corrr)
   library(kableExtra)
   library(magick)
   library(infer)

@@ -121,9 +121,41 @@ if (run_lasso) {
       theme_bw() +
       labs(y = "Count", x = "", fill = "EMA\ncompletion")
     
+    lass_correlations <-
+      TMB_plus %>% 
+      filter(!is.na(condition_mean)) %>%
+      select(-clinic_id, -condition_mean) %>%
+      mutate(id_cat = if_else(str_detect(id, "80pct"), "80pct", "50pct")) %>%
+      mutate(id_cat = if_else(str_detect(id, "66pct"), "66pct", id_cat)) %>%
+      gather(key = key, value = value, -user_id, -id, -id_cat) %>%
+      mutate(key = str_replace_all(key, "ethnicity", "race")) %>%
+      group_by(id_cat) %>%
+      nest() %>%
+      ungroup() %>%
+      mutate(data = map(.x = data, ~.x %>% 
+                          pivot_wider(names_from = key, values_from = value) %>%
+                          select(-user_id, -id)),
+             data_cor = map2(.x = data, .y = id_cat,
+                             ~corrr::correlate(.x, method = 'pearson', use = "pairwise.complete.obs") %>%
+                               corrr::rearrange(method = "MDS", absolute = FALSE) %>%
+                               corrr::shave() %>% 
+                               corrr::rplot(shape = 19, colors = c("red", "blue")) +
+                               theme(axis.text.x=element_text(angle = -90, hjust = 0)) +
+                               labs(title = paste0(.y, " EMA cut-off"))))
+    lass_comb <- cowplot::plot_grid(
+      cowplot::plot_grid(lass_correlations$data_cor[[1]] + theme(legend.position="none"),
+                          lass_correlations$data_cor[[2]]+ theme(legend.position="none"),
+                          lass_correlations$data_cor[[3]]+ theme(legend.position="none"), nrow = 3),
+      get_legend(lass_correlations$data_cor[[3]] + theme(legend.box.margin = margin(0, 0, 0, 0))),
+      nrow = 1, rel_widths = c(.92, .08)
+    )
+      
     ggsave("Files/Output/Aim2_distributions.tiff", 
            lasso_distributions, 
            units = "in", width = 14, height = 18)
+    ggsave("Files/Output/Aim2_correlations.tiff", 
+           lass_comb, 
+           units = "in", width = 15, height = 30)
   }
   
   vec <- c("80pct", "66pct", "50pct")

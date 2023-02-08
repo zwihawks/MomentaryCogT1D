@@ -47,7 +47,9 @@ subject_level_data <-
 TMB_clean <-
   TMB_tmp %>%
   select(-c(clinic_Weight, clinic_Height, clinic_WaistCir, 
-            clinic_NeckCir, clinic_SHSeizComaLast12MonthsB)) %>%
+            clinic_NeckCir, clinic_SHSeizComaLast12MonthsB,
+            clinic_gluAbsRateChgMean, clinic_gluSDRateChg,
+            clinic_gluGeoMean, clinic_gluGeoSD)) %>%
   mutate(demo_education_num = if_else(demo_education == "high", 0, NA_real_)) %>%
   mutate(demo_education_num = if_else(demo_education == "some_college", 1, demo_education_num)) %>%
   mutate(demo_education_num = if_else(demo_education == "technical", 1, demo_education_num)) %>%
@@ -141,21 +143,14 @@ if (run_lasso) {
                                corrr::shave() %>% 
                                corrr::rplot(shape = 19, colors = c("red", "blue")) +
                                theme(axis.text.x=element_text(angle = -90, hjust = 0)) +
-                               labs(title = paste0(.y, " EMA cut-off"))))
-    lass_comb <- cowplot::plot_grid(
-      cowplot::plot_grid(lass_correlations$data_cor[[1]] + theme(legend.position="none"),
-                          lass_correlations$data_cor[[2]]+ theme(legend.position="none"),
-                          lass_correlations$data_cor[[3]]+ theme(legend.position="none"), nrow = 3),
-      get_legend(lass_correlations$data_cor[[3]] + theme(legend.box.margin = margin(0, 0, 0, 0))),
-      nrow = 1, rel_widths = c(.92, .08)
-    )
+                               labs(color = "Pearson r")))
       
     ggsave("Files/Output/Aim2_distributions.tiff", 
            lasso_distributions, 
            units = "in", width = 14, height = 18)
     ggsave("Files/Output/Aim2_correlations.tiff", 
-           lass_comb, 
-           units = "in", width = 15, height = 30)
+           lass_correlations$data_cor[[1]], 
+           units = "in", width = 12, height = 10)
   }
   
   vec <- c("80pct", "66pct", "50pct")
@@ -180,6 +175,7 @@ if (run_lasso) {
         cvm <- 
           data.frame(lambda = cv_model$lambda,
                      mse = cv_model$cvm,
+                     rsq = 1 - (cv_model$cvm/var(for_lasso$condition_mean)),
                      inclusion = vec[i],
                      rep = j) %>%
           mutate(lambda_min = if_else(lambda == cv_model$lambda.min, 1, 0),
@@ -195,6 +191,7 @@ if (run_lasso) {
         tmp2 <- 
           data.frame(lambda = cv_model$lambda,
                      mse = cv_model$cvm,
+                     rsq = 1 - (cv_model$cvm/var(for_lasso$condition_mean)),
                      inclusion = vec[i],
                      rep = j) %>%
           mutate(lambda_min = if_else(lambda == cv_model$lambda.min, 1, 0),
@@ -234,7 +231,9 @@ mean_RMSE <-
   filter(lambda_min == 1) %>%
   group_by(inclusion) %>%
   summarise(mean_mse = mean(mse),
-            sd_mse = sd(mse)) %>%
+            sd_mse = sd(mse),
+            mean_rsq = mean(rsq),
+            sd_rsq = sd(rsq)) %>%
   mutate(mean_rmse = sqrt(mean_mse),
          sd_rmse = sqrt(sd_mse))
 
@@ -258,14 +257,23 @@ lasso_tmp[1,] <-
              as.character(round(mean_RMSE$sd_rmse[2], 2)), ", NA)"), 
       paste0(as.character(round(mean_RMSE$mean_rmse[3], 2)), " (", 
              as.character(round(mean_RMSE$sd_rmse[3], 2)), ", NA)")))
+lasso_tmp[2,] <-
+  as.list(
+    c("mean_R2", 
+      paste0(as.character(round(mean_RMSE$mean_rsq[1], 2)), " (", 
+             as.character(round(mean_RMSE$sd_rsq[1], 2)), ", NA)"), 
+      paste0(as.character(round(mean_RMSE$mean_rsq[2], 2)), " (", 
+             as.character(round(mean_RMSE$sd_rsq[2], 2)), ", NA)"), 
+      paste0(as.character(round(mean_RMSE$mean_rsq[3], 2)), " (", 
+             as.character(round(mean_RMSE$sd_rsq[3], 2)), ", NA)")))
 
 lasso_flex <-
-  bind_rows(lasso_tmp[1,], lasso_flex) 
+  bind_rows(lasso_tmp[1:2,], lasso_flex) 
 options(knitr.kable.NA = '')
 lasso_flex %>%
   kbl("html", digits = 3) %>%
   kable_classic(html_font = "Cambria", "basic", "center", full_width = F) %>%
-  row_spec(1, background = "lightgray") %>%
+  row_spec(1:2, background = "lightgray") %>%
   cat(., file = paste0(main_output_dir, "/lasso_reg_table.html"))
 
 lass_plot <-

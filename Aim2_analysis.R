@@ -298,19 +298,28 @@ quad_plot_gradient <-
              n_reps = n_reps*.5,
              make_plots = TRUE) 
 
+# change legend titles
+quad_plot_gradient[[1]][[2]]$grobs[[1]]$grobs[[4]]$children$guide.title.titleGrob.3896$children$GRID.text.3894$label <- "Neck circumference"
+quad_plot_gradient[[1]][[3]]$grobs[[1]]$grobs[[4]]$children$guide.title.titleGrob.3953$children$GRID.text.3951$label <- "Hypoglycemia"
+quad_plot_gradient[[1]][[4]]$grobs[[1]]$grobs[[4]]$children$guide.title.titleGrob.4010$children$GRID.text.4008$label <- "Glucose variability"
+quad_plot_gradient[[1]][[5]]$grobs[[1]]$grobs[[4]]$children$guide.title.titleGrob.4067$children$GRID.text.4065$label <- "Microvascular complications"
+quad_plot_gradient[[1]][[6]]$grobs[[1]]$grobs[[4]]$children$guide.title.titleGrob.4124$children$GRID.text.4122$label <- "Severe hypoglycemic events"
+quad_plot_gradient[[1]][[7]]$grobs[[1]]$grobs[[4]]$children$guide.title.titleGrob.4181$children$GRID.text.4179$label <- "Tiredness/fatigue"
+quad_plot_gradient[[1]][[8]]$grobs[[1]]$grobs[[4]]$children$guide.title.titleGrob.4238$children$GRID.text.4236$label <- "Age"
+
 quad_plot_gradient_comb <-
   cowplot::plot_grid(
     cowplot::plot_grid(
-      quad_plot_gradient[[2]][[2]], 
-      quad_plot_gradient[[2]][[3]],
-      quad_plot_gradient[[2]][[4]],
-      quad_plot_gradient[[2]][[5]],
+      quad_plot_gradient[[2]][[2]] + ggtitle("Neck circumference"), 
+      quad_plot_gradient[[2]][[3]] + ggtitle("Hypoglycemia (% time)"),
+      quad_plot_gradient[[2]][[4]] + ggtitle("Glucose variability"),
+      quad_plot_gradient[[2]][[5]] + ggtitle("Microvascular complications"),
       nrow = 1, labels = c("A","B", "C", "D")),
     cowplot::plot_grid(
       NULL,
-      quad_plot_gradient[[2]][[6]], 
-      quad_plot_gradient[[2]][[7]],
-      quad_plot_gradient[[2]][[8]],
+      quad_plot_gradient[[2]][[6]] + ggtitle("Severe hypoglycemic events"), 
+      quad_plot_gradient[[2]][[7]] + ggtitle("Tiredness/fatigue"),
+      quad_plot_gradient[[2]][[8]] + ggtitle("Age"),
       NULL,
       nrow = 1, rel_widths = c(.125, .25, .25, .25, .125),
       labels = c("","E", "F", "G", "")),

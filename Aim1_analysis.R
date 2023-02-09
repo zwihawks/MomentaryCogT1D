@@ -63,6 +63,22 @@ TMB_clean %>%
   distinct(.) %>% 
   summarise(sum = sum(clinic_cgmusestat, na.rm = TRUE)) 
 
+
+# ---------------------
+# Compute bayes R2
+# ---------------------
+
+df_R2 <- as.data.frame(matrix(0, length(models), 2))
+for (i in 1:length(models)) {
+  df_R2[i, 1] <- names(models)[i]
+  df_R2[i, 2] <- median(bayes_R2(models[[i]]))
+}
+write.csv(df_R2, "Files/Output/bayes_R2.csv", row.names = FALSE)
+df_R2 %>%
+  separate(V1, into = c("omit", "inclusion", "outcome"), sep = "/") %>%
+  group_by(outcome) %>%
+  summarise(mean(V2))
+
 # ---------------------
 # Output model results
 # ---------------------

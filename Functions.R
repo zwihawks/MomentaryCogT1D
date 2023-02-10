@@ -319,7 +319,17 @@ quad_plots <- function(model_input,
                                               guide = guide_colorbar(direction = "horizontal", 
                                                                      title.position = "top"),
                                               midpoint = median(epred_summary_tmp$metric, na.rm = TRUE)) } +
-      {if(!is.null(TMB)) ggtitle(text %>% str_remove_all(., "clinic_") %>% str_remove_all(., "demo_")) }
+      {if(!is.null(TMB)) ggtitle(text %>% str_remove_all(., "clinic_") %>% str_remove_all(., "demo_")) } +
+      {if(metric == "clinic_gluBelow70") scale_color_gradient2(low = 'red', mid = "salmon", high = "blue",
+                                                               guide = guide_colorbar(direction = "horizontal", 
+                                                                                      title.position = "top"),
+                                                               limits = c(0, 10), oob = squish,
+                                                               midpoint = median(epred_summary_tmp$metric, na.rm = TRUE)) } +
+      {if(metric == "clinic_gluCV") scale_color_gradient2(low = 'red', mid = "salmon", high = "blue",
+                                                          guide = guide_colorbar(direction = "horizontal", 
+                                                                                 title.position = "top"),
+                                                          limits = c(20, 50), oob = squish,
+                                                          midpoint = median(epred_summary_tmp$metric, na.rm = TRUE)) }
     
     legend[[j]] <- get_legend(individual_plots[[j]])
     individual_plots[[j]] <- individual_plots[[j]] + guides(color = 'none')
@@ -368,7 +378,7 @@ plot_min_max <- function(epred_summary, optimal = c("min", "max"), text) {
          title = "", 
          y = paste0(text, "\n% deviation from WP average"),
          fill = "Density") +
-    scale_fill_brewer(palette = "RdBu", direction = -1) +
+    scale_fill_manual(values = c("white", brewer.pal(n = 9, "Reds"))) +
     theme(legend.position = "bottom") 
   
   return(list(plotting_minima_maxima, minima_maxima))
@@ -381,45 +391,81 @@ plot_graph <- function (df, decile, color_key, out_dir,
   outcome_BP <- "MinLag_0"
   
   user_avgs_BP <- df %>% 
-    select((!contains("_WP") & contains("survey")), nightly_gl, value, 
+    select((!contains("_WP") & contains("survey")), value, 
            all_of(outcome_BP), -all_of(outcome)) %>%
     summarise_all(mean, na.rm = TRUE) %>%
     gather(key = key, value = num)
   
-  user_avgs_WP <- df %>%
-    select((contains("_WP") & contains("survey")), nightly_gl_WP, value_WP, all_of(outcome)) 
-  
-  my_mat <- matrix(0, ncol(user_avgs_WP), ncol(user_avgs_WP))
-  for (g in 1:ncol(user_avgs_WP)) {
-    for (h in 1:ncol(user_avgs_WP)) {
-      my_mat[g, h] <- mutinformation(infotheo::discretize(user_avgs_WP[, g]), 
-                                     infotheo::discretize(user_avgs_WP[, h]))
+  n_reps <- 1000
+  for (boot in 0:n_reps) {
+    user_avgs_WP <- df %>%
+      select((contains("_WP") & contains("survey")), value_WP, all_of(outcome)) 
+    
+    if (boot > 0) {
+      user_avgs_WP <- user_avgs_WP %>% slice_sample(prop = 1, replace = TRUE)
+    } 
+    
+    my_mat <- matrix(0, ncol(user_avgs_WP), ncol(user_avgs_WP))
+    for (g in 1:ncol(user_avgs_WP)) {
+      for (h in 1:ncol(user_avgs_WP)) {
+        my_mat[g, h] <- mutinformation(infotheo::discretize(user_avgs_WP[, g]), 
+                                       infotheo::discretize(user_avgs_WP[, h]))
+      }
     }
+    rownames(my_mat) <- colnames(user_avgs_WP)
+    colnames(my_mat) <- colnames(user_avgs_WP)
+    my_mat[lower.tri(my_mat, diag = TRUE)] <- NA
+    
+    comput_cors_tmp <- 
+      my_mat %>%
+      as.data.frame(.) %>% 
+      rownames_to_column() %>% 
+      gather(key = key, value = variable, -rowname) %>% 
+      mutate(variable = if_else(is.na(variable), 0, variable)) %>%
+      mutate(retain = ntile(variable, decile), 
+             retain = 
+               if_else((rowname == "value_WP" & key == outcome & variable > 0), as.integer(decile), retain)) %>%
+      mutate(variable = if_else(retain != decile, 0, variable)) %>%
+      select(-retain) %>% 
+      pivot_wider(names_from = key, values_from = variable) 
+    
+    if (boot == 0) {
+      compute_cors_long <- comput_cors_tmp %>% gather(key = key, value = value, -rowname)
+    } else {
+      comput_cors_tmp_long <- comput_cors_tmp %>% gather(key = key, value = value, -rowname)
+      colnames(comput_cors_tmp_long)[3] <- paste0("value_", boot)
+      compute_cors_long <-
+        compute_cors_long %>% left_join(comput_cors_tmp_long)
+    }
+    print(boot)
   }
-  rownames(my_mat) <- colnames(user_avgs_WP)
-  colnames(my_mat) <- colnames(user_avgs_WP)
   
-  comput_cors <- 
-    my_mat %>%
-    as.data.frame(.) %>% 
-    rownames_to_column() %>% 
-    gather(key = key, value = variable, -rowname) %>% 
-    mutate(diag = if_else(rowname == key, 1, 0)) %>%
-    group_by(diag) %>%
-    mutate(retain = ntile(variable, decile), 
-           retain = 
-             if_else((rowname == "value_WP" & key == outcome) | 
-                       (rowname == outcome & key == "value_WP"), as.integer(decile), retain),
-           retain = if_else(rowname == key, as.integer(0), retain)) %>%
-    ungroup() %>%
-    select(-diag) %>% 
-    mutate(variable = if_else(retain != decile, 0, variable)) %>%
-    select(-retain) %>% 
-    pivot_wider(names_from = key, values_from = variable) %>%
-    replace(is.na(.), 0)
+  bootstrapped_paths <- 
+    compute_cors_long %>% 
+    mutate_at(vars(contains("value")), ~if_else(. > 0, 1, 0)) %>%
+    mutate(sum = rowSums(select(., contains("value")))) %>%
+    select(rowname, key, sum) %>%
+    arrange(desc(sum)) %>%
+    filter(sum > n_reps/2)
   
-  my_mat2 <- comput_cors %>% select(-rowname) %>% as.matrix(.)
-  rownames(my_mat2) <- comput_cors$rowname
+  mean_pathsA <- 
+    compute_cors_long %>% 
+    gather(key = rep, value = value, -rowname, -key) %>%
+    mutate(value = if_else(value == 0, NA_real_, value)) %>%
+    group_by(rowname, key) %>% 
+    summarise(mean = mean(value, na.rm = TRUE)) %>%
+    right_join(bootstrapped_paths) %>%
+    select(1:3) 
+  mean_pathsB <- data.frame(rowname = mean_pathsA$key,
+                            key = mean_pathsA$rowname, 
+                            mean = mean_pathsA$mean) %>%
+    bind_rows(mean_pathsA) %>%
+    pivot_wider(names_from = key, values_from = mean) %>%
+    {. ->> tmp} %>%
+    select(rowname, tmp$rowname)
+  
+  my_mat2 <- mean_pathsB %>% select(-rowname) %>% as.matrix(.)
+  rownames(my_mat2) <- mean_pathsB$rowname
   
   if (sum(rownames(my_mat2) %in% colnames(my_mat2)) != length(rownames(my_mat2))) {
     print("Warning: rownames != colnames in matrix conversion")

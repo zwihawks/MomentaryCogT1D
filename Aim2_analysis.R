@@ -107,6 +107,12 @@ if (run_lasso) {
     right_join(dsm_model_terms) %>%
     select_if(~(sum(!is.na(.)) > .5*sum(is.na(.) | !is.na(.)))) 
   
+  # rename variables for interpretability
+  colnames(TMB_plus) <- colnames(TMB_plus) %>% str_remove_all(., "demo_") %>% str_remove_all(., "clinic_")
+  colnames(TMB_plus)[c(37, 38, 50:57)] <- 
+    c("clinic_id", "SevereHypoEvents", "snoring_binary", "tired_binary", "gasping_binary", "bloodPressure_binary",
+      "BMI_binary", "age_binary", "NeckCir_binary", "gender_male")
+  
   if (lasso_distributions) {
     lasso_distributions <- 
       TMB_plus %>% 
@@ -298,14 +304,14 @@ quad_plot_gradient <-
              n_reps = n_reps*.5,
              make_plots = TRUE) 
 
-# change legend titles
-quad_plot_gradient[[1]][[2]]$grobs[[1]]$grobs[[4]]$children$guide.title.titleGrob.3896$children$GRID.text.3894$label <- "Neck circumference"
-quad_plot_gradient[[1]][[3]]$grobs[[1]]$grobs[[4]]$children$guide.title.titleGrob.3953$children$GRID.text.3951$label <- "Hypoglycemia"
-quad_plot_gradient[[1]][[4]]$grobs[[1]]$grobs[[4]]$children$guide.title.titleGrob.4010$children$GRID.text.4008$label <- "Glucose variability"
-quad_plot_gradient[[1]][[5]]$grobs[[1]]$grobs[[4]]$children$guide.title.titleGrob.4067$children$GRID.text.4065$label <- "Microvascular complications"
-quad_plot_gradient[[1]][[6]]$grobs[[1]]$grobs[[4]]$children$guide.title.titleGrob.4124$children$GRID.text.4122$label <- "Severe hypoglycemic events"
-quad_plot_gradient[[1]][[7]]$grobs[[1]]$grobs[[4]]$children$guide.title.titleGrob.4181$children$GRID.text.4179$label <- "Tiredness/fatigue"
-quad_plot_gradient[[1]][[8]]$grobs[[1]]$grobs[[4]]$children$guide.title.titleGrob.4238$children$GRID.text.4236$label <- "Age"
+# change legend titles 
+quad_plot_gradient[[1]][[2]]$grobs[[1]]$grobs[[4]]$children[[1]]$children[[1]]$label <- "Neck circumference"
+quad_plot_gradient[[1]][[3]]$grobs[[1]]$grobs[[4]]$children[[1]]$children[[1]]$label <- "Hypoglycemia"
+quad_plot_gradient[[1]][[4]]$grobs[[1]]$grobs[[4]]$children[[1]]$children[[1]]$label <- "Glucose variability"
+quad_plot_gradient[[1]][[5]]$grobs[[1]]$grobs[[4]]$children[[1]]$children[[1]]$label <- "Microvascular complications"
+quad_plot_gradient[[1]][[6]]$grobs[[1]]$grobs[[4]]$children[[1]]$children[[1]]$label <- "Severe hypoglycemic events"
+quad_plot_gradient[[1]][[7]]$grobs[[1]]$grobs[[4]]$children[[1]]$children[[1]]$label <- "Tiredness/fatigue"
+quad_plot_gradient[[1]][[8]]$grobs[[1]]$grobs[[4]]$children[[1]]$children[[1]]$label <- "Age"
 
 quad_plot_gradient_comb <-
   cowplot::plot_grid(

@@ -28,7 +28,9 @@ L <-
   # clean EMA data - select relevant survey variables and variables to join on
   mydf_clean %>% 
   filter(test == test) %>%
-  select(user_id, contains("survey"), nightly_gl, MinLag_0, value) %>%
+  rename(survey_interruptions = interruptions_anyInterruptions) %>%
+  select(user_id, contains("survey"), MinLag_0, value, 
+         -survey_glucose_estimate_numeric) %>%
   {
     bind_cols(
       select_if(., is.numeric),
@@ -36,7 +38,7 @@ L <-
   } %>%
   # compute WP deviations
   group_by(user_id) %>%
-  mutate_at(vars(contains("survey"), nightly_gl, MinLag_0, value),
+  mutate_at(vars(contains("survey"), MinLag_0, value),
             funs(WP = (. - mean(., na.rm = TRUE)) / sd(., na.rm = TRUE))) %>%
   ungroup() %>%
   inner_join(model_df %>% unique(.)) %>%
@@ -69,7 +71,11 @@ cat_coefs <-
 graph_distributions <-
   cat_coefs %>%
   unnest(data) %>%
-  select(user_id, (!contains("_WP") & contains("survey")), nightly_gl) %>%
+  rename_at(.vars = vars(ends_with("_score")),
+            .funs = funs(sub("_score", "", .))) %>%
+  rename_at(.vars = vars(ends_with("_emotion")),
+            .funs = funs(sub("_emotion", "", .))) %>%
+  select(user_id, (!contains("_WP") & contains("survey"))) %>%
   gather(key = key, value = value, -user_id) %>%
   mutate(key = str_remove_all(key, "survey_")) %>%
   ggplot(., aes(x = value)) +
@@ -90,7 +96,7 @@ ggsave("Files/Output/Aim3_distributions.tiff",
 legend_labels <-
   cat_coefs %>% unnest(c(data)) %>% 
   select((contains("_WP") & contains("survey")), 
-         nightly_gl_WP, value_WP, MinLag_0_WP) %>% colnames(.)
+         value_WP, MinLag_0_WP) %>% colnames(.)
 color_key <- data.frame(var = legend_labels, 
                         col = brewer.pal(legend_labels %>% length(), "Set3"))
 
@@ -99,7 +105,8 @@ for (i in 1:nrow(cat_coefs)) {
   tryCatch(
     expr = {
       paths_tmp <-
-        plot_graph(cat_coefs$data[[i]], decile = 10, 
+        plot_graph(df = cat_coefs$data[[i]], 
+                   decile = 10, 
                    color_key = color_key, 
                    out_dir = paste0(main_output_dir, "/idio_"), 
                    with_names = FALSE,
@@ -107,11 +114,11 @@ for (i in 1:nrow(cat_coefs)) {
       count <- count + 1
     },
     error = function(e) {
-      paths_tmp <- NA
+      paths_tmp <- NA_real_
     }
   )
   
-  if (i == 1 & !is.na(paths_tmp)) {
+  if (i == 1 & is.data.frame(paths_tmp)) {
     paths <- paths_tmp
   } else {
     paths <- bind_rows(paths, paths_tmp)
@@ -133,7 +140,7 @@ png(filename = paste0(main_output_dir, "/legend.png"),
     width = 4, height = 5, units = "in", res = 300)
 plot.new()
 legend("center", 
-       legend = full_color_key$var, 
+       legend = full_color_key$var %>% str_remove_all(., "_emotion"), 
        pt.bg= full_color_key$col, 
        pch=21, pt.cex = 1, cex = 1, 
        bty = "n", inset = .5)
@@ -159,43 +166,21 @@ MI_summary <-
   filter(key != "DSM_medRT" & key != "MinLag_0" & !is.na(path) & !is.infinite(path)) %>%
   group_by(key) %>%
   mutate(sumKey = n()) %>%
+  mutate(percentKey = sumKey/count) %>%
   ungroup() %>%
-  group_by(key, path, sumKey) %>%
-  mutate(sumPath = n(),
-         percentPath = sumPath/count,
-         percentKey = sumKey/count) %>%
-  ungroup() %>%
-  select(key, path, percentPath, percentKey) 
-
-tmp <- 
-  MI_summary %>%
-  select(key, percentPath = percentKey) %>%
-  distinct(.) %>%
-  mutate(path = 0)
+  select(key, percentKey) %>%
+  distinct(.)
 
 MI_summary_plot <-
   MI_summary %>%
-  select(-percentKey) %>%
-  bind_rows(tmp) %>%
-  mutate(path = as.character(path),
-         path = if_else(path == "0", "Any length", path),
-         size = if_else(path == "Any length", "Thick", "NT")) %>%
-  ggplot(., aes(x = percentPath, y = reorder(key, percentPath), group = reorder(path, percentPath))) +
-  geom_linerange( aes(y = key, xmin = 0, xmax=percentPath, 
-                      color = size, size = size), 
-                  position = position_dodge(width = .7)) +
-  geom_point( size=3, aes(fill = path), 
-              position = position_dodge(width = .7), shape = 21) +
+  ggplot(., aes(x = percentKey, y = reorder(key, percentKey))) +
+  geom_bar(stat = "identity", fill = "lightblue4", width = .6) +
   theme_bw() +
   xlab("") +
   labs(x = "Fraction of participants", fill = "Path length", y = "") +
-  theme(legend.position = "bottom",
-        legend.margin = margin(0, 0, 0, 0),
-        legend.spacing.y = unit(0, "mm"))  +
-  scale_fill_brewer(palette = "RdBu", direction = -1) +
-  scale_color_manual(values = c("gray55", "black")) +
-  scale_size_manual(values = c(.4, 1.5)) +
-  guides(size = 'none', color = 'none')
+  guides(fill = 'none') +
+  theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"))
 
 ggsave("Files/Output/MI_summary_plot.tiff", MI_summary_plot, units = "in", width = 10, height = 5)
 

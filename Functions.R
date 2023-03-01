@@ -118,7 +118,7 @@ wrangle_subject_file <- function(df, select_SB = TRUE) {
   return(subject_data)
 }
 
-posterior_intervals <- function (df) {
+post_intervals <- function (df) {
   plot <- ggplot(df, aes(x = mean, y = fixef_num, group = inclusion)) +
     geom_vline(xintercept = 0, lty = 2) +
     geom_segment(aes(x = `2.5%`, xend = `97.5%`, 
@@ -133,9 +133,9 @@ posterior_intervals <- function (df) {
     geom_point(aes(fill = inclusion, y = fixef_num + jitter), shape = 21, size = 3) +
     geom_text(aes(label = sig, y = fixef_num + jitter - .002), size = 3, fontface = "bold") +
     scale_fill_manual(values = c("gray47", "gray73", "white")) +
-    theme_bw() +
+    theme_classic() +
     labs(fill = "EMA inclusion\ncut-off",
-         y = "Group-level effect", x = "Model estimate") +
+         y = "Model term (linear vs. quadratic)", x = "Magnitude of group effect") +
     guides(fill = guide_legend(order = 1)) 
 }
 
@@ -177,13 +177,15 @@ cat_plot_func <- function(df) {
                        geom_pointinterval(size = 2, aes(color = color)) +
                        geom_vline(xintercept = 0, lty = 2) +
                        theme_bw() +
-                       labs(x = "", y = "Group + Individual-level Slope", 
+                       labs(x = "Participants (ordered by individual estimate of glucose acceleration)", 
+                            y = "Individual estimate of glucose acceleration", 
                             color = "CI excludes 0", fill = "Random intercept",
                             title = toupper(.y)) +
                        theme(axis.text.x=element_blank(),  
                              axis.ticks.x=element_blank()) +
                        scale_color_manual(values = c("gray73", "deepskyblue3", "coral3", "darkred")) +
-                       facet_wrap(~inclusion, nrow = 3)
+                       facet_wrap(~inclusion, nrow = 3) +
+                       guides(color = 'none')
   ))
   
   return(df_new)

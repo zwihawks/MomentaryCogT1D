@@ -142,3 +142,44 @@ row2 <- monitor(to_model_gcpt_row2$stanfit)
 row1 %>% as.data.frame() %>% filter((valid != 1) |  (Bulk_ESS == min(Bulk_ESS)) | (Tail_ESS == min(Tail_ESS)))
 row2 %>% as.data.frame() %>% filter((valid != 1) |  (Bulk_ESS == min(Bulk_ESS)) | (Tail_ESS == min(Tail_ESS)))
 
+#-----------------------
+# DSM, 2022-11-10 post-hoc: with centered (but not scaled) IVs
+# Rerunning DSM medRTc, in keeping with manuscript's focus
+#-----------------------
+ if (frac == .66) {
+   if (run_models) {
+     to_model_dsm_OC <- 
+       to_model %>%
+       unnest(data) %>%
+       filter(test == "dsm" & !is.na(MinLag_0_WP)) %>%
+       mutate(MinLag_0_WP_sq = MinLag_0_WP^2) %>%
+       filter(
+         (MinLag_0_WP_sq > mean(MinLag_0_WP_sq, na.rm = TRUE) - 3*sd(MinLag_0_WP_sq, na.rm = TRUE)) &
+           (MinLag_0_WP_sq < mean(MinLag_0_WP_sq, na.rm = TRUE) + 3*sd(MinLag_0_WP_sq, na.rm = TRUE))
+       ) %>%
+       group_by(test, outcome, user_id) %>%
+       mutate(MinLag_0_centered = MinLag_0 - mean(MinLag_0, na.rm = TRUE)) %>%
+       ungroup() %>%
+       group_by(test, outcome) %>%
+       nest() %>% ungroup() 
+     write_rds(to_model_dsm_OC, "testCentering_rawFalse/to_model_dsm_OC.rds")
+     
+     options(mc.cores = parallel::detectCores())
+     to_model_dsm_row2_centered <-
+       stan_lmer(value ~ poly(MinLag_0_centered, 2, raw = FALSE) +
+                   (poly(MinLag_0_centered, 2, raw = FALSE) | user_id),
+                 data = to_model_dsm_OC$data[[2]],
+                 control=list(adapt_delta=0.99),
+                 iter = 20000, chains = 4)
+     write_rds(to_model_dsm_row2_centered, "testCentering_rawFalse/to_model_dsm_row2_cIV.rds")
+   } else {
+     to_model_dsm_row2_cIV <- readRDS("testCentering_rawFalse/to_model_dsm_row2_cIV.rds")
+   }
+   
+   # Bulk & tail ESS > 100 * n_chains
+   launch_shinystan(to_model_dsm_row2_cIV, ppd = FALSE)
+   row1_cIV <- monitor(to_model_dsm_row2_cIV$stanfit)
+   row1_cIV %>% as.data.frame() %>% filter((valid != 1) |  (Bulk_ESS == min(Bulk_ESS)) | (Tail_ESS == min(Tail_ESS)))
+ }
+
+

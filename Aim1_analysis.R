@@ -63,22 +63,6 @@ TMB_clean %>%
   distinct(.) %>% 
   summarise(sum = sum(clinic_cgmusestat, na.rm = TRUE)) 
 
-
-# ---------------------
-# Compute bayes R2
-# ---------------------
-
-df_R2 <- as.data.frame(matrix(0, length(models), 2))
-for (i in 1:length(models)) {
-  df_R2[i, 1] <- names(models)[i]
-  df_R2[i, 2] <- median(bayes_R2(models[[i]]))
-}
-write.csv(df_R2, "Files/Output/bayes_R2.csv", row.names = FALSE)
-df_R2 %>%
-  separate(V1, into = c("omit", "inclusion", "outcome"), sep = "/") %>%
-  group_by(outcome) %>%
-  summarise(mean(V2))
-
 # ---------------------
 # Output model results
 # ---------------------
@@ -171,7 +155,7 @@ post_plots <-
          `95% CI` = if_else(fixef == "poly(MinLag_0_WP, 2, raw = FALSE)1", "Linear", "Quadratic"),
          outcome = if_else(str_detect(outcome, "row1"), "Accuracy", "Speed (ms)"),
          test = toupper(test)) %>%
-  posterior_intervals(.) +
+  post_intervals(.) +
   facet_wrap(test ~ outcome, scales = "free") +
   theme(axis.text.y=element_blank(),  #remove y axis labels
         axis.ticks.y=element_blank())  #remove y axis ticks
@@ -187,7 +171,7 @@ post_plots_DSMRT <-
          `95% CI` = if_else(fixef == "poly(MinLag_0_WP, 2, raw = FALSE)1", "Linear", "Quadratic"),
          outcome = if_else(str_detect(outcome, "row1"), "Accuracy", "Speed (ms)"),
          test = toupper(test)) %>%
-  posterior_intervals(.) +
+  post_intervals(.) +
   theme(axis.text.y=element_blank(),  #remove y axis labels
         axis.ticks.y=element_blank(), #remove y axis ticks
         legend.position = "left")  
@@ -237,14 +221,6 @@ if (wrangle_for_cat_plots) {
   percent_strong <- read.csv("Files/Output/iLevelEffects_isStrong.csv")
 }
 
-percent_strong %>% 
-  group_by(outcome) %>% 
-  mutate(total = n()) %>%
-  ungroup() %>%
-  group_by(outcome, total) %>%
-  summarise(sum = sum(color)) %>%
-  mutate(percent = sum/total)
-
 # Saving to file
 cat_plots_comb <-
   ggpubr::ggarrange(ggpubr::ggarrange(cat_plots$plots[[4]], cat_plots$plots[[3]], nrow = 1, legend = "none"),
@@ -292,6 +268,74 @@ ggsave("Files/Output/Aim1_comb.tiff", Aim1_comb,
        units = "in", height = 8, width = 16)
 
 # -----------------------
+# Evaluate variability (wrt L2 random effect covariance matrix)
+# -----------------------
+
+for (i in 1:length(models)) {
+  model <- names(models)[i]
+  print(model)
+  sd_y <- models[[i]]$data$value %>% sd(., na.rm = TRUE)*.1
+  equivalence <- 
+    equivalence_test(models[[i]], ci = c(.9, .95), effects = "random", component = "all", range = c(0, sd_y*2)) %>%
+    as.data.frame(.) %>% 
+    filter(str_detect(Parameter, "igma") & 
+             !str_detect(Parameter, "ntercept") & 
+             str_detect(Parameter, "\\)2") & 
+             !str_detect(Parameter, "\\)1")) %>% 
+    select(-Parameter)
+  
+  if (i == 1) {
+    equivalence_df <-
+      equivalence %>%
+      mutate(model = model)
+  } else {
+    equivalence_df <-
+      equivalence_df %>% 
+      bind_rows(equivalence %>% mutate(model = model))
+  }
+}
+
+write.csv(equivalence_df, "Files/Output/equivalence_df.csv", row.names = FALSE)
+
+# compute ICC
+for (i in 1:length(models)) {
+  for_icc <-
+    models[i] %>%
+    map(spread_draws, `poly(MinLag_0_WP, 2, raw = FALSE)2`, b[group, term], sep = " u") %>%
+    bind_rows(.id = "id") %>%
+    rename(MinLag_0_WP_fixed = `poly(MinLag_0_WP, 2, raw = FALSE)2`) %>%
+    pivot_wider(names_from = group, values_from = b) %>%
+    mutate(term = str_remove(term, "ser_id:")) %>%
+    mutate(condition_mean_quad = MinLag_0_WP_fixed + `poly(MinLag_0_WP, 2, raw = FALSE)2`) 
+  icc_mod <- lmer(condition_mean_quad ~ 1 + (1 | term), data = for_icc)
+  icc_val <- performance::icc(icc_mod)$ICC_adjusted
+  inclusion <- str_split(names(models[i]), pattern = "_")[[1]][2]
+  test <- str_split(names(models[i]), pattern = "_")[[1]][5]
+  outcome <- str_split(names(models[i]), pattern = "_")[[1]][6]
+  outcome <- ifelse(str_detect(outcome, "row1"), "accuracy", "RT")
+  tmp <- data.frame(test = test, outcome = outcome, inclusion = inclusion, icc = icc_val)
+  
+  if (i == 1) {
+    icc_df <- tmp
+  } else {
+    icc_df <- icc_df %>%
+      bind_rows(tmp)
+  }
+}
+
+write.csv(icc_df, "Files/Output/icc_df.csv", row.names = FALSE)
+
+equivalence_df %>%
+  select(model, CI, H0 = ROPE_Equivalence, `inside ROPE` = ROPE_Percentage, HDI_low, HDI_high) %>%
+  separate(model, into = c("omit1", "inclusion", "omit2", "omit3", "test", "outcome"), sep = "_") %>%
+  mutate(outcome = if_else(str_detect(outcome, "row1"), "accuracy", "RT")) %>%
+  select(-contains("omit")) %>%
+  left_join(icc_df) %>%
+  kbl("html", digits = 3) %>%
+  kable_classic(html_font = "Cambria", "basic", "center", full_width = F) %>%
+  cat(., file = paste0(main_output_dir, "/Aim1_H2.html"))
+
+# -----------------------
 # Evaluate optimal performance
 # -----------------------
 
@@ -318,59 +362,6 @@ summary_stats <-
   summarise_if(is.numeric, mean, na.rm = TRUE) %>%
   ungroup() %>%
   summarise_if(is.numeric, mean, na.rm = TRUE)
-
-# Performance decrements exceeded 1% (9.76 ms) relative to individuals’ cognitive means 
-# when glucose was 1.33 standard deviations below and 2.82 standard deviations 
-# above individuals’ glucose means
-summary_stats_1pct_dec <-
-  epred_summary %>% 
-  mutate(percent_deviation = 100*((mean - user_intercept)/user_intercept),
-         deviation = mean - user_intercept,
-         tmp_deviation = percent_deviation - 1,
-         tmp_code = if_else(MinLag_0_WP < 0, "negative", "positive")) %>% 
-  group_by(MinLag_0_WP, inclusion, tmp_code) %>% 
-  summarise_at(vars(contains("deviation")), mean) %>%
-  ungroup() %>%
-  group_by(inclusion, tmp_code) %>%
-  filter(tmp_deviation > 0) %>%
-  filter(tmp_deviation == min(tmp_deviation)) %>%
-  ungroup() %>%
-  group_by(tmp_code) %>%
-  summarise_if(is.numeric, mean) %>%
-  ungroup() %>%
-  mutate(mean_deviation = mean(deviation))
-
-# Mean & SD glucose
-user_gl_sd <- 
-  models$`Files/20221013_50pct_inclusion/to_model_dsm_row2.rds`$data %>%
-  group_by(user_id) %>%
-  summarise(MinLag_0_sd = sd(MinLag_0, na.rm = TRUE),
-            MinLag_0_mean = mean(MinLag_0, na.rm = TRUE))
-
-user_gl_sd %>%
-  summarise_if(is.numeric, mean, na.rm = TRUE)
-
-# gl deviation in mg/dl
-# as well: raw gl value associated with 1% performance decrement
-pred_optimal_plotv1[[2]] %>%
-  left_join(user_gl_sd) %>%
-  mutate(MinLag_0_centered = MinLag_0_WP*MinLag_0_sd,
-         MinLag_0_raw = MinLag_0_centered + MinLag_0_mean,
-         MinLag_0_SDabove = MinLag_0_raw + 
-           (summary_stats_1pct_dec %>% filter(MinLag_0_WP > 0) %>% pull(MinLag_0_WP))*MinLag_0_sd,
-         MinLag_0_SDbelow = MinLag_0_raw + 
-           (summary_stats_1pct_dec %>% filter(MinLag_0_WP < 0) %>% pull(MinLag_0_WP))*MinLag_0_sd) %>%
-  # group by inclusion to compute weighted avg.
-  group_by(inclusion) %>%
-  summarise(mean_gl_deviation = mean(MinLag_0_centered),
-            mean_gl_raw = mean(MinLag_0_raw),
-            mean_gl_SDabove = mean(MinLag_0_SDabove),
-            mean_gl_SDbelow = mean(MinLag_0_SDbelow)) %>%
-  ungroup() %>%
-  summarise(mean_gl_deviation = mean(mean_gl_deviation),
-            mean_gl_raw = mean(mean_gl_raw),
-            mean_gl_SDabove = mean(mean_gl_SDabove),
-            mean_gl_SDbelow = mean(mean_gl_SDbelow))
 
 # correlation between age & dsm RT
 tmp <-

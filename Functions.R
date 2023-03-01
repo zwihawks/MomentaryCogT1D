@@ -3,6 +3,8 @@
 # --------------------------
 
 load_packs <- function() {
+  library(performance)
+  library(bayestestR)
   library(corrplot)
   library(corrr)
   library(kableExtra)

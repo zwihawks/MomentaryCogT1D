@@ -297,40 +297,11 @@ for (i in 1:length(models)) {
 
 write.csv(equivalence_df, "Files/Output/equivalence_df.csv", row.names = FALSE)
 
-# compute ICC
-for (i in 1:length(models)) {
-  for_icc <-
-    models[i] %>%
-    map(spread_draws, `poly(MinLag_0_WP, 2, raw = FALSE)2`, b[group, term], sep = " u") %>%
-    bind_rows(.id = "id") %>%
-    rename(MinLag_0_WP_fixed = `poly(MinLag_0_WP, 2, raw = FALSE)2`) %>%
-    pivot_wider(names_from = group, values_from = b) %>%
-    mutate(term = str_remove(term, "ser_id:")) %>%
-    mutate(condition_mean_quad = MinLag_0_WP_fixed + `poly(MinLag_0_WP, 2, raw = FALSE)2`) 
-  icc_mod <- lmer(condition_mean_quad ~ 1 + (1 | term), data = for_icc)
-  icc_val <- performance::icc(icc_mod)$ICC_adjusted
-  inclusion <- str_split(names(models[i]), pattern = "_")[[1]][2]
-  test <- str_split(names(models[i]), pattern = "_")[[1]][5]
-  outcome <- str_split(names(models[i]), pattern = "_")[[1]][6]
-  outcome <- ifelse(str_detect(outcome, "row1"), "accuracy", "RT")
-  tmp <- data.frame(test = test, outcome = outcome, inclusion = inclusion, icc = icc_val)
-  
-  if (i == 1) {
-    icc_df <- tmp
-  } else {
-    icc_df <- icc_df %>%
-      bind_rows(tmp)
-  }
-}
-
-write.csv(icc_df, "Files/Output/icc_df.csv", row.names = FALSE)
-
 equivalence_df %>%
   select(model, CI, H0 = ROPE_Equivalence, `inside ROPE` = ROPE_Percentage, HDI_low, HDI_high) %>%
   separate(model, into = c("omit1", "inclusion", "omit2", "omit3", "test", "outcome"), sep = "_") %>%
   mutate(outcome = if_else(str_detect(outcome, "row1"), "accuracy", "RT")) %>%
   select(-contains("omit")) %>%
-  left_join(icc_df) %>%
   kbl("html", digits = 3) %>%
   kable_classic(html_font = "Cambria", "basic", "center", full_width = F) %>%
   cat(., file = paste0(main_output_dir, "/Aim1_H2.html"))

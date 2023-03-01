@@ -133,7 +133,6 @@ cor_orig_cIV <- cor.test(for_cor$dsm_speed, for_cor$models_cIV)
 
 # examine H2: variation in individual estimates of gl acceleration
 model <- names(models_comb)[2]
-print(model)
 sd_y <- models_comb[[2]]$data$value %>% sd(., na.rm = TRUE)*.1
 equivalence <- 
   equivalence_test(models_comb[[2]], ci = c(.9, .95), effects = "random", component = "all", range = c(0, sd_y*2)) %>%
@@ -144,18 +143,7 @@ equivalence <-
            !str_detect(Parameter, "\\)1")) %>% 
   select(-Parameter)
 
-for_icc <-
-  models_comb[2] %>%
-  map(spread_draws, `poly(MinLag_0_centered, 2, raw = FALSE)2`, b[group, term], sep = " u") %>%
-  bind_rows(.id = "id") %>%
-  rename(MinLag_0_WP_fixed = `poly(MinLag_0_centered, 2, raw = FALSE)2`) %>%
-  pivot_wider(names_from = group, values_from = b) %>%
-  mutate(term = str_remove(term, "ser_id:")) %>%
-  mutate(condition_mean_quad = MinLag_0_WP_fixed + `poly(MinLag_0_centered, 2, raw = FALSE)2`) 
-icc_mod <- lmer(condition_mean_quad ~ 1 + (1 | term), data = for_icc)
-icc_val <- performance::icc(icc_mod)$ICC_adjusted
-equivalence$icc <- icc_val
-equivalence_df <- equivalence %>% select(CI, H0 = ROPE_Equivalence, `inside ROPE` = ROPE_Percentage, HDI_low, HDI_high, icc)
+equivalence_df <- equivalence %>% select(CI, H0 = ROPE_Equivalence, `inside ROPE` = ROPE_Percentage, HDI_low, HDI_high)
 equivalence_df %>%
   kbl("html", digits = 3) %>%
   kable_classic(html_font = "Cambria", "basic", "center", full_width = F) %>%

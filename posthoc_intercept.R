@@ -1,5 +1,5 @@
 # --------------------------
-# Step 5: Aim 2 data-driven inter-individual difference analysis
+# Step 5.5: Aim 2 (lasso) analysis, part 2 (variation in individual intercepts)
 # --------------------------
 
 # ---------------------

@@ -1,5 +1,5 @@
 ## MomentaryCogT1D
-Code and resources associated with manuscript "Characterizing dynamic changes in glucose and momentary cognition in Type 1 Diabetes" 
+Code and resources associated with manuscript "Dynamic associations between glucose and ecological momentary cognition in Type 1 Diabetes" 
 
 #### Authors:  
 

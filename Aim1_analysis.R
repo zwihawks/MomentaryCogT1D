@@ -306,10 +306,6 @@ equivalence_df %>%
   kable_classic(html_font = "Cambria", "basic", "center", full_width = F) %>%
   cat(., file = paste0(main_output_dir, "/Aim1_H2.html"))
 
-# -----------------------
-# Evaluate optimal performance
-# -----------------------
-
 epred_summary <- quad_plots(models[str_detect(names(models), "dsm_row2")], 
                             EMA_cutoffs = c("66pct", "80pct", "50pct"), 
                             TMB_list = list(NULL),
@@ -317,6 +313,58 @@ epred_summary <- quad_plots(models[str_detect(names(models), "dsm_row2")],
                             lasso_results = NULL,
                             n_reps = NA,
                             make_plots = FALSE)
+
+# -----------------------
+# Quantify variability
+# -----------------------
+
+for (j in c(2, 4)) {
+  for (i in c("50pct", "66pct", "80pct")) {
+    # identify individuals ~1 SD below vs. above the mean wrt glu acceleration
+    ex_users <- 
+      cat_plots$data[[j]] %>% 
+      filter(inclusion == i) %>%
+      mutate(condition_mean_quad_z = (condition_mean_quad - 
+                                        mean(condition_mean_quad, na.rm = TRUE))/sd(condition_mean_quad, na.rm = TRUE)) %>%
+      filter((condition_mean_quad_z < 1.1 & condition_mean_quad_z > .9) |
+               (condition_mean_quad_z > -1.1 & condition_mean_quad_z < -.9)) %>%
+      rename(user_id = term) %>%
+      mutate(group = if_else(condition_mean_quad_z < 0, "1sd_below", "1sd_above")) %>%
+      select(user_id, group)
+    
+    # compute delta RT at glucose values 1 & 2 SD below individuals' means 
+    delta_RT <-
+      epred_summary %>%
+      filter(MinLag_0_WP == -1 | MinLag_0_WP == 0 | MinLag_0_WP == -2) %>%
+      filter(user_id %in% ex_users$user_id) %>%
+      filter(inclusion == "50pct") %>%
+      select(MinLag_0_WP, user_id, mean) %>%
+      pivot_wider(names_from = MinLag_0_WP, values_from = mean) %>%
+      left_join(ex_users) %>%
+      mutate(diff_1SD = `-1` - `0`,
+             diff_2SD = `-2` - `0`) %>%
+      group_by(group) %>%
+      summarise(mean_1SD = mean(diff_1SD),
+                mean_2SD = mean(diff_2SD)) %>%
+      mutate(inclusion = i,
+             task = cat_plots$test_outcome[j])
+    
+    if (i == "50pct" & j == 2) {
+      df <- delta_RT
+    } else {
+      df <- df %>% bind_rows(delta_RT)
+    }
+  }
+}
+
+df %>%
+  group_by(task, group) %>%
+  summarise(mean_1SD = mean(mean_1SD),
+            mean_2SD = mean(mean_2SD))
+
+# -----------------------
+# Evaluate optimal performance
+# -----------------------
 
 pred_optimal_plotv1 <- plot_min_max(epred_summary, optimal = "min", text = "DSM RT")
 

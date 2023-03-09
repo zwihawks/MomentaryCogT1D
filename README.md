@@ -3,7 +3,10 @@ Code and resources associated with manuscript "Dynamic associations between gluc
 
 #### Authors:  
 
-Hawks, Z.W., Beck, E.D., Jung, L., Fonseca, L.M., Sliwinski, M., Weinstock, R.S., Grinspoon, E., Xu, I., Strong, R.W., Singh, S., Van Dongen, H.P.A., Frumkin, M.R., Bulger, J., Cleveland, M., Janess, K., Kudva, Y., Miller, K., Pratley, R., Rickels, M., Rizvi, S.R., Verdejo, A., Chaytor, N. & Germine, L.T. Please address all correspondence to zhawks@mclean.harvard.edu.
+Hawks, Z.W., Beck, E.D., Jung, L., Fonseca, L.M., Sliwinski, M., Weinstock, R.S., Grinspoon, E., Xu, I., Strong, R.W., Singh, S., Van Dongen, H.P.A., Frumkin, M.R., Bulger, J., Cleveland, M., Janess, K., Kudva, Y., Pratley, R., Rickels, M., Rizvi, S.R., Chaytor, N.S.* & Germine, L.T.*  
+
+Asterisk indicates co-senior authors  
+Please address all correspondence to zhawks@mclean.harvard.edu.
 
 #### Description of files:
 

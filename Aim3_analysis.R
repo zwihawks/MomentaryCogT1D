@@ -2,6 +2,8 @@
 # Step 7: Aim 3 data-driven intra-individual analysis
 # --------------------------
 
+# For NDM revision #1: rerun incl. substance & arousal 
+
 # ---------------------
 # source functions & load libraries  
 # ---------------------
@@ -10,7 +12,7 @@ setwd(dirname(current_path ))
 source("Functions.R")
 load_packs()
 
-main_output_dir <- "Files/Output/Individual_graphs" 
+main_output_dir <- "Files/Output/Individual_graphs_rev1" 
 
 # ---------------------
 # read in & clean data  
@@ -22,6 +24,11 @@ model_df <- dsm_speed$data
 poly_coefs <- poly(model_df$MinLag_0_WP, 2, raw = FALSE)[,2]
 model_df <- model_df %>% mutate(poly_coefs = poly_coefs)
 mydf_clean <- read.csv("Files/20221013_50pct_inclusion/mydf_clean_20221014.csv")
+ema_dat <- read.csv("Files/ema_level_data.csv") %>%
+  select(user_id, sitting_id, contains("sleepiness"), survey_any_substance) %>%
+  mutate(survey_any_substance = if_else(survey_any_substance == "Yes", 1, 0))
+
+mydf_clean <- mydf_clean %>% left_join(ema_dat)
 
 test <- "dsm"
 L <-
@@ -75,16 +82,18 @@ graph_distributions <-
             .funs = funs(sub("_score", "", .))) %>%
   rename_at(.vars = vars(ends_with("_emotion")),
             .funs = funs(sub("_emotion", "", .))) %>%
+  rename("survey_substance_use" = "survey_any_substance") %>%
+  rename("survey_alertness" = "survey_sleepiness") %>%
   select(user_id, (!contains("_WP") & contains("survey"))) %>%
   gather(key = key, value = value, -user_id) %>%
   mutate(key = str_remove_all(key, "survey_")) %>%
   ggplot(., aes(x = value)) +
   geom_histogram(alpha = .5, bins = 15, aes(fill = "50pct")) +
-  facet_wrap(~ key, scales = "free", ncol = 4) +
+  facet_wrap(~ key, scales = "free", ncol = 3) +
   theme_bw() +
   labs(y = "Count", x = "", fill = "EMA\ncompletion")
 
-ggsave("Files/Output/Aim3_distributions.tiff", 
+ggsave("Files/Output/Aim3_distributions_rev1.tiff", 
        graph_distributions, 
        units = "in", width = 12, height = 5)
 
@@ -157,8 +166,8 @@ path_summary <-
   summarise(sum = n(), mean = mean(path)) %>%
   mutate(percent = sum/count*100) %>%
   arrange(desc(percent))
-write.csv(path_summary, "Files/Output/MI_path_summary.csv", row.names = FALSE)
-write.csv(paths, "Files/Output/MI_path_full.csv", row.names = FALSE)
+write.csv(path_summary, "Files/Output/MI_path_summary_rev1.csv", row.names = FALSE)
+write.csv(paths, "Files/Output/MI_path_full_rev1.csv", row.names = FALSE)
 
 # count <- 188
 MI_summary <-
@@ -173,6 +182,9 @@ MI_summary <-
 
 MI_summary_plot <-
   MI_summary %>%
+  mutate(key = str_remove(key, "_emotion")) %>%
+  mutate(key = if_else(key == "any_substance", "substance_use", key)) %>%
+  mutate(key = if_else(key == "sleepiness", "alertness", key)) %>%
   ggplot(., aes(x = percentKey, y = reorder(key, percentKey))) +
   geom_bar(stat = "identity", fill = "lightblue4", width = .6) +
   theme_bw() +
@@ -182,7 +194,7 @@ MI_summary_plot <-
   theme(axis.text=element_text(size=12),
         axis.title=element_text(size=14,face="bold"))
 
-ggsave("Files/Output/MI_summary_plot.tiff", MI_summary_plot, units = "in", width = 10, height = 5)
+ggsave("Files/Output/MI_summary_plot_rev1.tiff", MI_summary_plot, units = "in", width = 10, height = 5)
 
 # ---------------------
 # Read in images & combine

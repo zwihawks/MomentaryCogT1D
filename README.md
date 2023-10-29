@@ -16,9 +16,8 @@ Please address all correspondence to zhawks@mclean.harvard.edu
 4. Code for hypothesis-driven hierarchical Bayesian modeling (HB_Modeling.R).  
 5. Code for visualizing & interpreting results of hierarchical Bayesian models (Aim1_analysis.R).
 6. Code for data-driven (lasso regression) analyses (Aim2_analysis.R).
-7. Code for data-driven (graph theoretic) analyses (Aim3_analysis.R). 
-8. Post-hoc analyses where glucose was centered (but not scaled) within participants (posthoc_c.R). 
-9. Post-hoc analyses using lasso regression to predict between-person differences in momentary cognition (posthoc_intercept.R).  
-10. Functions sourced by analysis scripts (Functions.R).  
+7. Post-hoc analyses where glucose was centered (but not scaled) within participants (posthoc_c.R). 
+8. Post-hoc analyses using lasso regression to predict between-person differences in momentary cognition (posthoc_intercept.R).  
+9. Functions sourced by analysis scripts (Functions.R).  
 
 

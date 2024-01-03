@@ -371,8 +371,8 @@ pred_optimal_plotv1 <- plot_min_max(epred_summary, optimal = "min", text = "DSM 
 ggsave("Files/Output/optimal_performance.tiff", pred_optimal_plotv1[[1]], 
        units = "in", height = 4, width = 7)
 
-# optimal performance occurred 0.78 standard deviations above individuals’ glucose means
-# was associated with a 0.66% (6.19 ms) performance gain
+# optimal performance occurred 0.72 standard deviations above individuals’ glucose means
+# was associated with a 0.57% (5.30 ms) performance gain
 summary_stats <-
   pred_optimal_plotv1[[2]] %>% 
   select(contains("deviation"), MinLag_0_WP, user_id, inclusion) %>%

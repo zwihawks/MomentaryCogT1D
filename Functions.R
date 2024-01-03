@@ -354,7 +354,7 @@ plot_min_max <- function(epred_summary, optimal = c("min", "max"), text) {
   }
   
   minima_maxima <- 
-    epred_summary %>% group_by(user_id) %>% 
+    epred_summary %>% group_by(user_id, inclusion) %>% 
     filter(mean == optimal_func(mean)) %>% ungroup()
   
   minima_maxima <- minima_maxima %>% 
